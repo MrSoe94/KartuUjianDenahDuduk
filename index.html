@@ -258,13 +258,15 @@
       min-height: 297mm;
       background: #fff;
       margin: 0 auto;
-      padding: 10mm;
+      padding: 5mm;
       box-shadow: 0 10px 30px rgba(0,0,0,.10);
       overflow:hidden;
     }
     .cardsGrid{
       display:grid;
-      gap: 6mm;
+      gap: 4mm;
+      justify-content:center;
+      justify-items:center;
     }
 
     /* Kartu - menggunakan CSS variable dari template */
@@ -281,45 +283,46 @@
       print-color-adjust: exact;
     }
     .examCard .bar{
-      height: 12mm;
+      height: 11mm;
       background: var(--cardPrimary, #4f46e5);
       color: #fff;
-      padding: 3mm 4mm;
+      padding: 2.5mm 3.5mm;
       display:flex;
       align-items:center;
       justify-content:space-between;
       gap:3mm;
     }
     .examCard .bar .title{
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
-      line-height: 1.1;
-      max-width: 72%;
+      line-height: 1.05;
+      max-width: 70%;
       display: -webkit-box;
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 2;
       line-clamp: 2;
-      max-height: calc(11px * 1.1 * 2);
+      max-height: calc(10px * 1.05 * 2);
       overflow: hidden;
     }
     .examCard .bar .sub{
-      font-size: 9px;
+      font-size: 8px;
       opacity: .92;
-      margin-top: 1mm;
+      margin-top: .8mm;
       font-weight: 500;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
     .examCard .body{
-      padding: 4mm;
+      padding: 2.5mm;
       display:flex;
-      gap: 4mm;
-      height: calc(100% - 12mm);
+      gap: 2.5mm;
+      height: calc(100% - 11mm);
+      overflow:hidden;
     }
     .examCard .photo{
-      width: 18mm;
-      height: 24mm;
+      width: 17mm;
+      height: 23mm;
       border: 1px solid rgba(0,0,0,.25);
       border-radius: 6px;
       overflow:hidden;
@@ -328,7 +331,7 @@
       display:flex;
       align-items:center;
       justify-content:center;
-      font-size: 9px;
+      font-size: 8px;
       color:#666;
     }
     .examCard .photo img{width:100%; height:100%; object-fit:cover; display:block}
@@ -338,36 +341,56 @@
       flex-direction:column;
       justify-content:space-between;
       min-width:0;
+      min-height:0;
+      overflow:hidden;
+    }
+    .examCard .details{
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow:hidden;
     }
     .examCard .name{
-      font-size: 12px;
+      font-size: 10px;
       font-weight: 800;
-      margin: 0 0 1.5mm;
+      margin: 0 0 .8mm;
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
     }
     .examCard .line{
       display:grid;
-      grid-template-columns: 22mm 1fr;
-      gap: 2mm;
-      font-size: 10px;
-      margin: 1mm 0;
+      grid-template-columns: 16mm 1fr;
+      gap: 1.2mm;
+      font-size: 8px;
+      margin: .45mm 0;
       min-width: 0;
     }
     .examCard .label{color:#444; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
     .examCard .value{font-weight:700; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
     .examCard .foot{
       display:flex;
-      align-items:flex-end;
+      align-items:flex-start;
       justify-content:space-between;
-      gap: 3mm;
-      margin-top: 2mm;
+      gap: 2mm;
+      margin-top: .5mm;
+      min-width:0;
     }
     .examCard .stamp{
-      font-size: 9px;
+      font-size: 7px;
       color:#333;
-      min-width: 45mm;
+      min-width: 0;
+      max-width: calc(100% - 18mm);
+      line-height: 1.1;
+      display:flex;
+      flex-direction:column;
+      justify-content:flex-start;
+      gap: .5mm;
+      min-height: 18mm;
+    }
+    .examCard .stamp .sigSpace{
+      display:block;
+      flex: 1 1 auto;
+      min-height: 7mm;
     }
     .examCard .stamp .sigName,
     .examCard .stamp .sigNip{
@@ -378,17 +401,23 @@
     }
     .examCard .stamp .sigName{
       font-weight:700;
-      padding-bottom: 1mm;
-      margin-bottom: 1mm;
+      padding-top: 40px;
+      margin-bottom: 0;
       border-bottom: 1px dashed rgba(0,0,0,.35);
     }
+    .examCard .stamp .sigNip{
+      margin-top: 0;
+      font-size: 6px;
+      line-height: 1;
+    }
     .examCard .qr{
-      width: 20mm; height: 20mm;
+      width: 16mm; height: 16mm;
       border: 1px solid rgba(0,0,0,.20);
       border-radius: 6px;
       overflow:hidden;
       display:flex; align-items:center; justify-content:center;
       align-self: flex-start;
+      flex: 0 0 auto;
     }
     .examCard .qr canvas,
     .examCard .qr img{
@@ -717,7 +746,7 @@
             <select id="p_layout" style="width:180px">
               <option value="1">1 kartu / halaman</option>
               <option value="2">2 kartu / halaman</option>
-              <option value="4" selected>4 kartu / halaman</option>
+              <option value="4">4 kartu / halaman</option>
               <option value="8">8 kartu / halaman</option>
             </select>
 
@@ -1417,7 +1446,7 @@
           <div class="body">
             ${photoHtml}
             <div class="info">
-              <div>
+              <div class="details">
                 <div class="name">${escapeHtml(data.name)}</div>
                 <div class="line"><div class="label">ID</div><div class="value">${escapeHtml(data.idno)}</div></div>
                 <div class="line"><div class="label">Kelas</div><div class="value">${escapeHtml(data.class)}</div></div>
@@ -1427,7 +1456,8 @@
               </div>
               <div class="foot">
                 <div class="stamp">
-                  <span>${escapeHtml(data.sigLabel)}</span>
+                  <span class="sigLabel">${escapeHtml(data.sigLabel)}</span>
+                  <span class="sigSpace" aria-hidden="true"></span>
                   <span class="sigName">${escapeHtml(data.principal)}</span>
                   <span class="sigNip">NIP. ${escapeHtml(data.nip)}</span>
                 </div>
