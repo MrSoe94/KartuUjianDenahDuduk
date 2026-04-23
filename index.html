@@ -389,17 +389,17 @@
       print-color-adjust: exact;
     }
     .examCard .bar{
-      height: 11mm;
+      height: calc(11mm * var(--cardScale, 1));
       background: var(--cardPrimary, #4f46e5);
       color: #fff;
-      padding: 2.5mm 3.5mm;
+      padding: calc(2.5mm * var(--cardScale, 1)) calc(3.5mm * var(--cardScale, 1));
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:3mm;
+      gap: calc(3mm * var(--cardScale, 1));
     }
     .examCard .bar .title{
-      font-size: 10px;
+      font-size: calc(10px * var(--cardScale, 1));
       font-weight: 700;
       line-height: 1.05;
       max-width: 70%;
@@ -407,28 +407,28 @@
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 2;
       line-clamp: 2;
-      max-height: calc(10px * 1.05 * 2);
+      max-height: calc(10px * 1.05 * 2 * var(--cardScale, 1));
       overflow: hidden;
     }
     .examCard .bar .sub{
-      font-size: 8px;
+      font-size: calc(8px * var(--cardScale, 1));
       opacity: .92;
-      margin-top: .8mm;
+      margin-top: calc(.8mm * var(--cardScale, 1));
       font-weight: 500;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
     .examCard .body{
-      padding: 2.5mm;
+      padding: calc(2.5mm * var(--cardScale, 1));
       display:flex;
-      gap: 2.5mm;
-      height: calc(100% - 11mm);
+      gap: calc(2.5mm * var(--cardScale, 1));
+      height: calc(100% - 11mm * var(--cardScale, 1));
       overflow:hidden;
     }
     .examCard .photo{
-      width: 21mm;
-      height: 25mm;
+      width: calc(21mm * var(--cardScale, 1));
+      height: calc(25mm * var(--cardScale, 1));
       border: 1px solid rgba(0,0,0,.25);
       border-radius: 6px;
       overflow:hidden;
@@ -456,19 +456,19 @@
       overflow:hidden;
     }
     .examCard .name{
-      font-size: 10px;
+      font-size: calc(10px * var(--cardScale, 1));
       font-weight: 800;
-      margin: 0 0 .8mm;
+      margin: 0 0 calc(.8mm * var(--cardScale, 1));
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
     }
     .examCard .line{
       display:grid;
-      grid-template-columns: 16mm 1fr;
-      gap: 1.2mm;
-      font-size: 8px;
-      margin: .45mm 0;
+      grid-template-columns: calc(16mm * var(--cardScale, 1)) 1fr;
+      gap: calc(1.2mm * var(--cardScale, 1));
+      font-size: calc(8px * var(--cardScale, 1));
+      margin: calc(.45mm * var(--cardScale, 1)) 0;
       min-width: 0;
     }
     .examCard .label{color:#444; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
@@ -477,22 +477,22 @@
       display:flex;
       align-items:flex-start;
       justify-content:space-between;
-      gap: 2mm;
-      margin-top: .5mm;
+      gap: calc(2mm * var(--cardScale, 1));
+      margin-top: calc(.5mm * var(--cardScale, 1));
       min-width:0;
     }
     .examCard .stamp{
-      font-size: 7px;
+      font-size: calc(7px * var(--cardScale, 1));
       color:#333;
       min-width: 0;
-      max-width: calc(100% - 18mm);
+      max-width: calc(100% - 18mm * var(--cardScale, 1));
       line-height: 1.1;
       display:grid;
       grid-template-columns: 1fr;
-      grid-template-rows: auto 10mm auto auto;
+      grid-template-rows: auto calc(10mm * var(--cardScale, 1)) auto auto;
       row-gap: 0;
       align-items:start;
-      min-height: 18mm;
+      min-height: calc(18mm * var(--cardScale, 1));
     }
     .examCard .stamp .sigLabel{
       display:block;
@@ -503,7 +503,7 @@
     .examCard .stamp .sigBlock{
       grid-row: 2;
       width: 100%;
-      height: 10mm;
+      height: calc(10mm * var(--cardScale, 1));
       padding: 0;
       display:flex;
       align-items:center;
@@ -518,11 +518,11 @@
       align-items:flex-end;
       justify-content:flex-start;
       width: 100%;
-      height: 10mm;
+      height: calc(10mm * var(--cardScale, 1));
     }
     .examCard .stamp .sigImage img{
       max-width: 100%;
-      max-height: 10mm;
+      max-height: calc(10mm * var(--cardScale, 1));
       width: auto;
       height: auto;
       object-fit: contain;
@@ -531,7 +531,7 @@
     .examCard .stamp .sigSpace{
       display:block;
       flex: 1 1 auto;
-      min-height: 7mm;
+      min-height: calc(7mm * var(--cardScale, 1));
     }
     .examCard .stamp .sigName,
     .examCard .stamp .sigNip{
@@ -554,7 +554,7 @@
       font-size: 6px;
     }
     .examCard .qr{
-      width: 16mm; height: 16mm;
+      width: calc(16mm * var(--cardScale, 1)); height: calc(16mm * var(--cardScale, 1));
       border: 1px solid rgba(0,0,0,0);
       border-radius: 2px;
       overflow:hidden;
@@ -814,6 +814,44 @@
         </div>
 
         <div class="row" style="margin-top:10px">
+          <div style="grid-column:1/-1">
+            <label>Label NISN/NIM/ID</label>
+            <input id="t_nisnLabel" placeholder="Contoh: NISN" />
+            <div class="muted">Label ini dipakai di kartu untuk baris NISN/NIM/ID.</div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label>Label No Peserta</label>
+            <input id="t_idnoLabel" placeholder="Contoh: No Peserta" />
+          </div>
+          <div>
+            <label>Label Kelas</label>
+            <input id="t_classLabel" placeholder="Contoh: Kelas" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label>Label Ruang</label>
+            <input id="t_roomLabel" placeholder="Contoh: Ruang" />
+          </div>
+          <div></div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label>Label Sesi</label>
+            <input id="t_sessionLabel" placeholder="Contoh: Sesi" />
+          </div>
+          <div>
+            <label>Label No Duduk</label>
+            <input id="t_seatLabel" placeholder="Contoh: No Duduk" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
           <div>
             <label>Upload Tanda Tangan</label>
             <input id="t_signatureFile" type="file" accept="image/*" />
@@ -874,6 +912,7 @@
             <input id="t_h" type="number" min="40" max="120" />
           </div>
         </div>
+        <div class="muted" style="margin-top:6px">Saat lebar/tinggi diubah, isi kartu ikut menyesuaikan otomatis agar tidak over.</div>
 
         <div class="row" style="margin-top:10px">
           <div>
@@ -1098,6 +1137,12 @@
       principal: "Kepala Sekolah",
       nip: "-",
       sigLabel: "TTD Kepala Sekolah",
+      nisnLabel: "NISN/NIM/ID",
+      idnoLabel: "No Peserta",
+      classLabel: "Kelas",
+      roomLabel: "Ruang",
+      sessionLabel: "Sesi",
+      seatLabel: "No Duduk",
       signatureImage: "",
       logoImage: "",
       logoSizeMm: 9,
@@ -1186,6 +1231,12 @@
     const t_principal = document.getElementById("t_principal");
     const t_nip = document.getElementById("t_nip");
     const t_sigLabel = document.getElementById("t_sigLabel");
+    const t_nisnLabel = document.getElementById("t_nisnLabel");
+    const t_idnoLabel = document.getElementById("t_idnoLabel");
+    const t_classLabel = document.getElementById("t_classLabel");
+    const t_roomLabel = document.getElementById("t_roomLabel");
+    const t_sessionLabel = document.getElementById("t_sessionLabel");
+    const t_seatLabel = document.getElementById("t_seatLabel");
     const t_signatureFile = document.getElementById("t_signatureFile");
     const t_signatureClear = document.getElementById("t_signatureClear");
     const t_signaturePreview = document.getElementById("t_signaturePreview");
@@ -1491,11 +1542,12 @@
 
     function buildDetailLines(data){
       const rows = [];
-      if(template.showIdno !== false) rows.push({ label: "No Peserta", value: data.idno });
-      if(template.showClass !== false) rows.push({ label: "Kelas", value: data.class });
-      if(template.showRoom !== false) rows.push({ label: "Ruang", value: data.room });
-      if(template.showSession !== false) rows.push({ label: "Sesi", value: data.session });
-      if(template.showSeat !== false) rows.push({ label: "No Duduk", value: data.seat });
+      if(template.showIdno !== false) rows.push({ label: template.idnoLabel || DEFAULT_TEMPLATE.idnoLabel, value: data.idno });
+      if(data.nisnId) rows.push({ label: template.nisnLabel || DEFAULT_TEMPLATE.nisnLabel, value: data.nisnId });
+      if(template.showClass !== false) rows.push({ label: template.classLabel || DEFAULT_TEMPLATE.classLabel, value: data.class });
+      if(template.showRoom !== false) rows.push({ label: template.roomLabel || DEFAULT_TEMPLATE.roomLabel, value: data.room });
+      if(template.showSession !== false) rows.push({ label: template.sessionLabel || DEFAULT_TEMPLATE.sessionLabel, value: data.session });
+      if(template.showSeat !== false) rows.push({ label: template.seatLabel || DEFAULT_TEMPLATE.seatLabel, value: data.seat });
       return rows.map(row => `<div class="line"><div class="label">${escapeHtml(row.label)}</div><div class="value">${escapeHtml(row.value || "-")}</div></div>`).join("");
     }
 
@@ -1703,6 +1755,12 @@
       t_principal.value = template.principal || "";
       t_nip.value = template.nip || "";
       t_sigLabel.value = template.sigLabel || "";
+      t_nisnLabel.value = template.nisnLabel || DEFAULT_TEMPLATE.nisnLabel;
+      t_idnoLabel.value = template.idnoLabel || DEFAULT_TEMPLATE.idnoLabel;
+      t_classLabel.value = template.classLabel || DEFAULT_TEMPLATE.classLabel;
+      t_roomLabel.value = template.roomLabel || DEFAULT_TEMPLATE.roomLabel;
+      t_sessionLabel.value = template.sessionLabel || DEFAULT_TEMPLATE.sessionLabel;
+      t_seatLabel.value = template.seatLabel || DEFAULT_TEMPLATE.seatLabel;
       setSignaturePreview(template.signatureImage || "");
       setLogoPreview(template.logoImage || "");
       if(t_signatureFile) t_signatureFile.value = "";
@@ -1736,6 +1794,12 @@
       template.principal = sanitizeText(t_principal.value) || DEFAULT_TEMPLATE.principal;
       template.nip = sanitizeText(t_nip.value) || DEFAULT_TEMPLATE.nip;
       template.sigLabel = sanitizeText(t_sigLabel.value) || DEFAULT_TEMPLATE.sigLabel;
+      template.nisnLabel = sanitizeText(t_nisnLabel.value) || DEFAULT_TEMPLATE.nisnLabel;
+      template.idnoLabel = sanitizeText(t_idnoLabel.value) || DEFAULT_TEMPLATE.idnoLabel;
+      template.classLabel = sanitizeText(t_classLabel.value) || DEFAULT_TEMPLATE.classLabel;
+      template.roomLabel = sanitizeText(t_roomLabel.value) || DEFAULT_TEMPLATE.roomLabel;
+      template.sessionLabel = sanitizeText(t_sessionLabel.value) || DEFAULT_TEMPLATE.sessionLabel;
+      template.seatLabel = sanitizeText(t_seatLabel.value) || DEFAULT_TEMPLATE.seatLabel;
       template.boardText = sanitizeText(t_boardText.value) || DEFAULT_TEMPLATE.boardText;
       template.teacherText = sanitizeText(t_teacherText.value) || DEFAULT_TEMPLATE.teacherText;
       template.logoSizeMm = Math.max(4, Math.min(20, toNumberOrZero(t_logoSize?.value) || DEFAULT_TEMPLATE.logoSizeMm));
@@ -1829,7 +1893,7 @@
     });
 
     ["input","change"].forEach(evt => {
-      [t_school,t_exam,t_year,t_font,t_principal,t_nip,t_sigLabel,t_boardText,t_teacherText,t_w,t_h,t_primary,t_bg,t_showPhoto,t_showQr,t_html].forEach(el => {
+      [t_school,t_exam,t_year,t_font,t_principal,t_nip,t_sigLabel,t_nisnLabel,t_idnoLabel,t_classLabel,t_roomLabel,t_sessionLabel,t_seatLabel,t_boardText,t_teacherText,t_w,t_h,t_primary,t_bg,t_showPhoto,t_showQr,t_html].forEach(el => {
         el.addEventListener(evt, () => {
           pullTemplateFromUI();
           renderMiniPreview();
@@ -1877,9 +1941,13 @@
 
     // ===== Card Rendering =====
     function cardStyleVars(){
+      const scaleByWidth = template.wMm / DEFAULT_TEMPLATE.wMm;
+      const scaleByHeight = template.hMm / DEFAULT_TEMPLATE.hMm;
+      const cardScale = Math.max(0.75, Math.min(1.25, Math.min(scaleByWidth, scaleByHeight)));
       return `
         --cardW: ${template.wMm}mm;
         --cardH: ${template.hMm}mm;
+        --cardScale: ${cardScale};
         --cardPrimary: ${template.primary};
         --cardBg: ${template.bg};
         --cardFont: ${template.font};
