@@ -9,7 +9,8 @@
   <!-- PDF Export (html2pdf.js) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
     crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+    crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous"></script>
   <!-- QR Code (qrcodejs) -->
   <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
@@ -859,10 +860,10 @@
     }
 
     .examCard .bar .title {
-      font-size: calc(10px * var(--cardScale, 1));
+      font-size: calc(12px * var(--cardScale, 1));
       font-weight: 700;
       line-height: 1.05;
-      max-width: 70%;
+      max-width: 100%;
       display: -webkit-box;
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 2;
@@ -966,7 +967,7 @@
       align-items: flex-start;
       justify-content: space-between;
       gap: calc(2mm * var(--cardScale, 1));
-       margin-top: calc(var(--sigGap, .5mm) * var(--cardScale, 1));
+      margin-top: calc(var(--sigGap, .5mm) * var(--cardScale, 1));
       min-width: 0;
     }
 
@@ -1747,6 +1748,13 @@
               <option value="room">Ruang (A-Z)</option>
               <option value="seat">No Duduk (angka)</option>
             </select>
+
+            <span class="pill">Kualitas PDF</span>
+            <select id="p_pdfQuality" style="width:150px">
+              <option value="small" selected>Kecil</option>
+              <option value="medium">Sedang</option>
+              <option value="high">Tinggi</option>
+            </select>
           </div>
 
           <div class="right">
@@ -2041,6 +2049,7 @@
     const p_layout = document.getElementById("p_layout");
     const p_orientation = document.getElementById("p_orientation");
     const p_sort = document.getElementById("p_sort");
+    const p_pdfQuality = document.getElementById("p_pdfQuality");
     const chkShowIdno = document.getElementById("chkShowIdno");
     const chkShowNisnId = document.getElementById("chkShowNisnId");
     const chkShowClass = document.getElementById("chkShowClass");
@@ -2182,6 +2191,29 @@
         fr.onerror = reject;
         fr.readAsDataURL(file);
       });
+    }
+
+    async function readImageFileAsOptimizedDataURL(file, maxW = 480, maxH = 640, quality = 0.82) {
+      const src = await readImageFileAsDataURL(file);
+      const img = new Image();
+      img.decoding = "async";
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = src;
+      });
+
+      const w = img.naturalWidth || img.width || maxW;
+      const h = img.naturalHeight || img.height || maxH;
+      const scale = Math.min(1, maxW / w, maxH / h);
+      const cw = Math.max(1, Math.round(w * scale));
+      const ch = Math.max(1, Math.round(h * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = cw;
+      canvas.height = ch;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, cw, ch);
+      return canvas.toDataURL("image/jpeg", quality);
     }
 
     async function readImageFileAsScaledDataURL(file, maxW = 900, maxH = 360) {
@@ -2434,7 +2466,7 @@
       let photo = sanitizeText(in_photoUrl.value);
       if (in_photoFile.files && in_photoFile.files[0]) {
         try {
-          photo = await readImageFileAsDataURL(in_photoFile.files[0]);
+          photo = await readImageFileAsOptimizedDataURL(in_photoFile.files[0]);
         } catch (e) {
           showToast("Gagal membaca foto: " + e.message, "error");
           return;
@@ -3454,6 +3486,7 @@
       renderFullPreview();
       const filename = `Kartu_Ujian_${(template.school || "Sekolah").replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.pdf`;
       const orientation = p_orientation.value === "landscape" ? "landscape" : "portrait";
+      const pdfQualityPreset = p_pdfQuality?.value || "small";
 
       const jsPDFCtor = window.jspdf?.jsPDF || window.jsPDF;
       if (!window.html2canvas || !jsPDFCtor) {
@@ -3465,20 +3498,29 @@
       await new Promise(r => setTimeout(r, 150));
 
       try {
-        const pdf = new jsPDFCtor({ unit: "mm", format: "a4", orientation });
+        const pdf = new jsPDFCtor({ unit: "mm", format: "a4", orientation, compress: true });
         const sheets = [...previewArea.querySelectorAll(".sheet")];
         if (!sheets.length) {
           alert("Tidak ada kartu untuk diekspor.");
           return;
         }
 
+        const qualityOptions = {
+          small: { scale: 1.2, quality: 0.76 },
+          medium: { scale: 1.5, quality: 0.84 },
+          high: { scale: 1.8, quality: 0.92 }
+        };
+        const selectedQuality = qualityOptions[pdfQualityPreset] || qualityOptions.small;
+        const exportScale = selectedQuality.scale;
+        const exportQuality = selectedQuality.quality;
+
         for (let i = 0; i < sheets.length; i++) {
           const canvas = await window.html2canvas(sheets[i], {
-            scale: 2,
+            scale: exportScale,
             useCORS: true,
             backgroundColor: "#ffffff"
           });
-          const imgData = canvas.toDataURL("image/png");
+          const imgData = canvas.toDataURL("image/jpeg", exportQuality);
           const pageWidth = pdf.internal.pageSize.getWidth();
           const pageHeight = pdf.internal.pageSize.getHeight();
           const imgWidth = pageWidth;
@@ -3488,7 +3530,7 @@
           const x = (pageWidth - drawWidth) / 2;
           const y = (pageHeight - drawHeight) / 2;
           if (i > 0) pdf.addPage();
-          pdf.addImage(imgData, "PNG", x, y, drawWidth, drawHeight);
+          pdf.addImage(imgData, "JPEG", x, y, drawWidth, drawHeight, undefined, "FAST");
         }
         pdf.save(filename);
       } catch (err) {
@@ -3694,7 +3736,7 @@
         return;
       }
       try {
-        setPhotoPreview(await readImageFileAsDataURL(file));
+        setPhotoPreview(await readImageFileAsOptimizedDataURL(file));
       } catch {
         setPhotoPreview(in_photoUrl.value);
       }
