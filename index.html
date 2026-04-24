@@ -438,6 +438,29 @@
       line-height: 1.1;
     }
 
+    .photoPreviewBox {
+      margin-top: 8px;
+      min-height: 96px;
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      background: rgba(0, 0, 0, .14);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      overflow: hidden;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .photoPreviewBox img {
+      max-width: 100%;
+      max-height: 78px;
+      object-fit: contain;
+      display: block;
+    }
+
     .actions {
       display: flex;
       gap: 8px;
@@ -1311,6 +1334,7 @@
             <label>Upload Foto (opsional)</label>
             <input id="in_photoFile" type="file" accept="image/*" />
             <div class="muted">Disimpan sebagai dataURL (ukuran file kecil lebih aman).</div>
+            <div class="photoPreviewBox" id="in_photoPreviewBox">Belum ada foto</div>
           </div>
         </div>
 
@@ -1956,6 +1980,7 @@
     const in_seat = document.getElementById("in_seat");
     const in_photoUrl = document.getElementById("in_photoUrl");
     const in_photoFile = document.getElementById("in_photoFile");
+    const in_photoPreviewBox = document.getElementById("in_photoPreviewBox");
     const search = document.getElementById("search");
     const tbody = document.getElementById("tbody");
     const statCount = document.getElementById("statCount");
@@ -2378,6 +2403,7 @@
       in_seat.value = "";
       in_photoUrl.value = "";
       in_photoFile.value = "";
+      setPhotoPreview("");
       btnAdd.textContent = "Tambah / Update";
       editBadge.classList.add("hide");
       editBadge.textContent = "Mode Edit";
@@ -2445,6 +2471,7 @@
       in_seat.value = s.seat || "";
       in_photoUrl.value = (s.photo && String(s.photo).startsWith("data:")) ? "" : (s.photo || "");
       in_photoFile.value = "";
+      setPhotoPreview(s.photo || "");
       btnAdd.textContent = "Update Data";
       editBadge.textContent = `Mode Edit: ${s.name || "-"}`;
       editBadge.classList.remove("hide");
@@ -2522,6 +2549,16 @@
       const src = String(student?.photo || "").trim();
       if (!src) return `<div class="tablePhoto empty">-</div>`;
       return `<div class="tablePhoto"><img src="${escapeHtml(src)}" alt="Foto ${escapeHtml(student?.name || "peserta")}" loading="lazy" /></div>`;
+    }
+
+    function setPhotoPreview(src) {
+      const value = String(src || "").trim();
+      if (!in_photoPreviewBox) return;
+      if (!value) {
+        in_photoPreviewBox.textContent = "Belum ada foto";
+        return;
+      }
+      in_photoPreviewBox.innerHTML = `<img src="${escapeHtml(value)}" alt="Preview foto peserta" />`;
     }
 
     function escapeHtml(str) {
@@ -3646,6 +3683,22 @@
     // ===== Events =====
     btnAdd.addEventListener("click", addOrUpdate);
     document.getElementById("btnResetForm").addEventListener("click", resetForm);
+    in_photoUrl.addEventListener("input", () => {
+      if (in_photoFile.files && in_photoFile.files[0]) return;
+      setPhotoPreview(in_photoUrl.value);
+    });
+    in_photoFile.addEventListener("change", async () => {
+      const file = in_photoFile.files && in_photoFile.files[0];
+      if (!file) {
+        setPhotoPreview(in_photoUrl.value);
+        return;
+      }
+      try {
+        setPhotoPreview(await readImageFileAsDataURL(file));
+      } catch {
+        setPhotoPreview(in_photoUrl.value);
+      }
+    });
     document.getElementById("btnClearAll").addEventListener("click", () => {
       if (!confirm("Hapus SEMUA data peserta?")) return;
       students = [];
