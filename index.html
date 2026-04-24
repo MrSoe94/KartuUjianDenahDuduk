@@ -1219,9 +1219,14 @@
 
         <div class="actions" style="margin-top:12px; justify-content:flex-start">
           <button class="btn green" id="btnExportJson">Export JSON</button>
+          <button class="btn primary" id="btnBackupApp">Backup Database</button>
           <label class="btn" style="display:inline-flex; gap:10px; align-items:center; cursor:pointer">
             Import JSON
             <input id="importJson" type="file" accept="application/json" style="display:none" />
+          </label>
+          <label class="btn" style="display:inline-flex; gap:10px; align-items:center; cursor:pointer">
+            Restore Backup
+            <input id="importBackup" type="file" accept="application/json" style="display:none" />
           </label>
           <button class="btn" id="btnExportXlsxTemplate">Download Template XLSX</button>
           <label class="btn" style="display:inline-flex; gap:10px; align-items:center; cursor:pointer">
@@ -3250,6 +3255,26 @@
       setTimeout(() => URL.revokeObjectURL(url), 500);
     }
 
+    function exportBackup() {
+      const payload = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        template,
+        students,
+        seating,
+        activeTab: localStorage.getItem(KEY_ACTIVE_TAB) || "data"
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `backup_database_kartu_ujian_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 500);
+    }
+
     async function importJsonFile(file) {
       const text = await file.text();
       let payload;
@@ -3264,6 +3289,33 @@
       renderTable();
       renderMiniPreview();
       showToast("Import JSON berhasil.");
+    }
+
+    async function importBackupFile(file) {
+      const text = await file.text();
+      let payload;
+      try { payload = JSON.parse(text); } catch { alert("File backup tidak valid."); return; }
+
+      if (!payload || typeof payload !== "object") {
+        alert("File backup tidak valid.");
+        return;
+      }
+
+      if (payload.template) template = { ...structuredClone(DEFAULT_TEMPLATE), ...payload.template };
+      if (Array.isArray(payload.students)) students = payload.students;
+      if (payload.seating && typeof payload.seating === "object") seating = payload.seating;
+      if (payload.activeTab) localStorage.setItem(KEY_ACTIVE_TAB, payload.activeTab);
+
+      saveTemplate();
+      saveStudents();
+      saveSeating();
+      bindTemplateToUI();
+      renderTable();
+      renderMiniPreview();
+      renderFullPreview();
+      renderSeatingUI(true);
+      if (payload.activeTab && typeof showTab === "function") showTab(payload.activeTab);
+      showToast("Backup berhasil dipulihkan.");
     }
 
     function downloadXlsxTemplate() {
@@ -3392,10 +3444,17 @@
     p_sort.addEventListener("change", renderFullPreview);
 
     document.getElementById("btnExportJson").addEventListener("click", exportJson);
+    document.getElementById("btnBackupApp").addEventListener("click", exportBackup);
     document.getElementById("importJson").addEventListener("change", async (e) => {
       const f = e.target.files?.[0];
       if (!f) return;
       await importJsonFile(f);
+      e.target.value = "";
+    });
+    document.getElementById("importBackup").addEventListener("change", async (e) => {
+      const f = e.target.files?.[0];
+      if (!f) return;
+      await importBackupFile(f);
       e.target.value = "";
     });
 
