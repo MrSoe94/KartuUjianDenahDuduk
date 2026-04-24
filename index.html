@@ -372,6 +372,72 @@
       background: rgba(255, 255, 255, .03)
     }
 
+    .pager {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .pager.top {
+      margin-top: 0;
+      margin-bottom: 12px;
+    }
+
+    .pager .pageInfo {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .pager .pageActions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .pager select {
+      width: auto;
+      min-width: 110px;
+      padding: 8px 10px;
+    }
+
+    .pager .btn:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .tablePhoto {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, .12);
+      background: rgba(255, 255, 255, .05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 10px;
+      text-align: center;
+      flex: 0 0 auto;
+    }
+
+    .tablePhoto img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .tablePhoto.empty {
+      padding: 4px;
+      line-height: 1.1;
+    }
+
     .actions {
       display: flex;
       gap: 8px;
@@ -1286,22 +1352,60 @@
           <button class="btn red" id="btnClearAll">Hapus Semua</button>
         </div>
 
+        <div class="pager top">
+          <div class="pageInfo" id="pageInfoTop">Halaman 1</div>
+          <div class="pageActions">
+            <label class="muted" style="display:inline-flex; align-items:center; gap:8px; margin:0">
+              Baris/page
+              <select id="pageSizeTop">
+                <option value="all">All</option>
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+              </select>
+            </label>
+            <button class="btn" id="btnPrevPageTop">Sebelumnya</button>
+            <button class="btn" id="btnNextPageTop">Berikutnya</button>
+          </div>
+        </div>
+
         <div style="margin-top:12px; overflow:auto">
           <table>
             <thead>
               <tr>
+                <th>No</th>
+                <th>Foto</th>
                 <th>Nama</th>
                 <th>No Peserta</th>
                 <th>NISN/NIM/ID</th>
                 <th>Kelas</th>
                 <th>Ruang</th>
                 <th>Sesi</th>
-                <th>No</th>
+                <th>No Duduk</th>
                 <th style="width:170px">Aksi</th>
               </tr>
             </thead>
             <tbody id="tbody"></tbody>
           </table>
+        </div>
+
+        <div class="pager">
+          <div class="pageInfo" id="pageInfoBottom">Halaman 1</div>
+          <div class="pageActions">
+            <label class="muted" style="display:inline-flex; align-items:center; gap:8px; margin:0">
+              Baris/page
+              <select id="pageSizeBottom">
+                <option value="all">All</option>
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+              </select>
+            </label>
+            <button class="btn" id="btnPrevPageBottom">Sebelumnya</button>
+            <button class="btn" id="btnNextPageBottom">Berikutnya</button>
+          </div>
         </div>
       </div>
 
@@ -1832,6 +1936,8 @@
     // ===== State =====
     let students = loadStudents();
     let template = loadTemplate();
+    let currentPage = 1;
+    let tablePageSize = 10;
 
     // ===== Elements =====
     const tabs = document.querySelectorAll(".tab");
@@ -1856,6 +1962,10 @@
     const statFiltered = document.getElementById("statFiltered");
     const editBadge = document.getElementById("editBadge");
     const btnAdd = document.getElementById("btnAdd");
+    const pageInfos = [document.getElementById("pageInfoTop"), document.getElementById("pageInfoBottom")];
+    const prevPageButtons = [document.getElementById("btnPrevPageTop"), document.getElementById("btnPrevPageBottom")];
+    const nextPageButtons = [document.getElementById("btnNextPageTop"), document.getElementById("btnNextPageBottom")];
+    const pageSizeSelects = [document.getElementById("pageSizeTop"), document.getElementById("pageSizeBottom")];
     const toastWrap = document.getElementById("toastWrap");
 
     const t_school = document.getElementById("t_school");
@@ -2315,6 +2425,7 @@
       }
 
       saveStudents();
+      if (!editingId) currentPage = 1;
       renderTable();
       renderMiniPreview();
       showToast(editingId ? "Data peserta diperbarui." : "Data peserta ditambahkan.");
@@ -2345,27 +2456,32 @@
       if (!confirm("Hapus data peserta ini?")) return;
       students = students.filter(s => s.id !== id);
       saveStudents();
+      currentPage = 1;
       renderTable();
       renderMiniPreview();
       showToast("Data peserta dihapus.");
     }
 
     function renderTable() {
-      const q = sanitizeText(search.value).toLowerCase();
-      const filtered = students.filter(s => {
-        const blob = `${s.name} ${s.idno} ${s.nisnId || ""} ${s.class} ${s.room} ${s.session} ${s.seat}`.toLowerCase();
-        return blob.includes(q);
-      });
+      const filtered = getFilteredStudents();
+
+      const effectivePageSize = tablePageSize === "all" ? Math.max(filtered.length, 1) : Number(tablePageSize) || 10;
+      const totalPages = Math.max(1, Math.ceil(filtered.length / effectivePageSize));
+      currentPage = Math.min(Math.max(1, currentPage), totalPages);
+      const startIndex = (currentPage - 1) * effectivePageSize;
+      const pageItems = filtered.slice(startIndex, startIndex + effectivePageSize);
 
       if (filtered.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="8" class="muted" style="text-align:center; padding:18px">Data tidak ditemukan.</td>
+            <td colspan="10" class="muted" style="text-align:center; padding:18px">Data tidak ditemukan.</td>
           </tr>
         `;
       } else {
-        tbody.innerHTML = filtered.map(s => `
+        tbody.innerHTML = pageItems.map((s, i) => `
         <tr>
+          <td>${startIndex + i + 1}</td>
+          <td>${getTablePhotoHtml(s)}</td>
           <td>${escapeHtml(s.name)}</td>
           <td>${escapeHtml(s.idno)}</td>
           <td>${escapeHtml(s.nisnId || "-")}</td>
@@ -2378,11 +2494,34 @@
             <button class="btn red" data-action="delete" data-id="${escapeHtml(s.id)}">Hapus</button>
           </td>
         </tr>
-      `).join("");
+        `).join("");
       }
 
       statCount.textContent = String(students.length);
       statFiltered.textContent = String(filtered.length);
+
+      const pageText = filtered.length === 0
+        ? "Tidak ada data"
+        : `Halaman ${currentPage} dari ${totalPages} • Menampilkan ${startIndex + 1}-${startIndex + pageItems.length} dari ${filtered.length}`;
+      pageInfos.forEach(el => { if (el) el.textContent = pageText; });
+      prevPageButtons.forEach(btn => { if (btn) btn.disabled = currentPage <= 1 || filtered.length === 0; });
+      nextPageButtons.forEach(btn => { if (btn) btn.disabled = currentPage >= totalPages || filtered.length === 0; });
+      const pageSizeValue = tablePageSize === "all" ? "all" : String(tablePageSize);
+      pageSizeSelects.forEach(sel => { if (sel && sel.value !== pageSizeValue) sel.value = pageSizeValue; });
+    }
+
+    function getFilteredStudents() {
+      const q = sanitizeText(search.value).toLowerCase();
+      return students.filter(s => {
+        const blob = `${s.name} ${s.idno} ${s.nisnId || ""} ${s.class} ${s.room} ${s.session} ${s.seat}`.toLowerCase();
+        return blob.includes(q);
+      });
+    }
+
+    function getTablePhotoHtml(student) {
+      const src = String(student?.photo || "").trim();
+      if (!src) return `<div class="tablePhoto empty">-</div>`;
+      return `<div class="tablePhoto"><img src="${escapeHtml(src)}" alt="Foto ${escapeHtml(student?.name || "peserta")}" loading="lazy" /></div>`;
     }
 
     function escapeHtml(str) {
@@ -3370,6 +3509,7 @@
       saveTemplate();
       saveStudents();
       bindTemplateToUI();
+      currentPage = 1;
       renderTable();
       renderMiniPreview();
       showToast("Import JSON berhasil.");
@@ -3394,6 +3534,7 @@
       saveStudents();
       saveSeating();
       bindTemplateToUI();
+      currentPage = 1;
       renderTable();
       renderMiniPreview();
       renderFullPreview();
@@ -3496,6 +3637,7 @@
       const replace = confirm(`Ditemukan ${imported.length} peserta dari XLSX.\n\nKlik OK untuk REPLACE semua data lama.\nKlik Cancel untuk GABUNG (append).`);
       students = replace ? imported : [...imported, ...students];
       saveStudents();
+      currentPage = 1;
       renderTable();
       renderMiniPreview();
       showToast("Import XLSX berhasil.");
@@ -3508,11 +3650,47 @@
       if (!confirm("Hapus SEMUA data peserta?")) return;
       students = [];
       saveStudents();
+      currentPage = 1;
       renderTable();
       renderMiniPreview();
       showToast("Semua data peserta dihapus.");
     });
-    search.addEventListener("input", renderTable);
+    search.addEventListener("input", () => {
+      currentPage = 1;
+      renderTable();
+    });
+
+    pageSizeSelects.forEach(sel => {
+      if (!sel) return;
+      sel.addEventListener("change", () => {
+        const nextSize = sel.value === "all" ? "all" : Math.max(1, Number(sel.value) || 10);
+        tablePageSize = nextSize;
+        currentPage = 1;
+        pageSizeSelects.forEach(other => { if (other && other.value !== String(nextSize)) other.value = String(nextSize); });
+        renderTable();
+      });
+    });
+
+    prevPageButtons.forEach(btn => {
+      if (!btn) return;
+      btn.addEventListener("click", () => {
+        if (currentPage <= 1) return;
+        currentPage -= 1;
+        renderTable();
+      });
+    });
+
+    nextPageButtons.forEach(btn => {
+      if (!btn) return;
+      btn.addEventListener("click", () => {
+        if (tablePageSize === "all") return;
+        const filteredCount = getFilteredStudents().length;
+        const totalPages = Math.max(1, Math.ceil(filteredCount / tablePageSize));
+        if (currentPage >= totalPages) return;
+        currentPage += 1;
+        renderTable();
+      });
+    });
 
     document.getElementById("btnSaveTemplate").addEventListener("click", saveTemplateAction);
     document.getElementById("btnResetTemplate").addEventListener("click", resetTemplate);
