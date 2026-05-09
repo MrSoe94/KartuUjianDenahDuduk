@@ -1111,7 +1111,7 @@
 
     .examCard .stamp .sigName,
     .examCard .stamp .sigNip {
-      display: block;
+      display: inline-block;
       position: relative;
       z-index: 1;
       white-space: nowrap;
@@ -1120,6 +1120,9 @@
       margin: 0;
       padding: 0;
       line-height: 1;
+      width: fit-content;
+      max-width: 100%;
+      align-self: flex-start;
     }
 
     .examCard .stamp .sigName {
@@ -1626,10 +1629,30 @@
         </div>
 
         <div class="row" style="margin-top:10px">
-          <div style="grid-column:1/-1">
+          <div>
+            <label>Upload Logo Kanan Header</label>
+            <input id="t_logoRightFile" type="file" accept="image/*" />
+            <div class="muted">Logo ini muncul di sisi kanan header kartu.</div>
+          </div>
+          <div>
+            <label>Pratinjau Logo Kanan</label>
+            <div id="t_logoRightPreview" class="logoPreviewBox">Belum ada logo kanan</div>
+          </div>
+        </div>
+
+        <div class="actions" style="margin-top:8px; justify-content:flex-start">
+          <button class="btn" id="t_logoRightClear" type="button">Hapus Logo Kanan</button>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <div>
             <label>Ukuran Logo (mm)</label>
             <input id="t_logoSize" type="number" min="4" max="20" step="1" />
             <div class="muted">Semakin besar angka, semakin besar logo di header kartu.</div>
+          </div>
+          <div>
+            <label>Teks Kanan Header</label>
+            <input id="t_headerRightText" placeholder="Contoh: Kartu Ujian" />
           </div>
         </div>
 
@@ -1756,7 +1779,7 @@
               <option value="html">Template HTML (Advanced)</option>
             </select>
             <div class="muted">Mode HTML bebas mengubah layout memakai placeholder: {{school}}, {{exam}}, {{year}},
-              {{principal}}, {{nip}}, {{stamp}}, {{signature}}, {{logo}}, {{details}}, {{name}}, {{idno}}, {{nisnId}},
+              {{principal}}, {{nip}}, {{stamp}}, {{signature}}, {{logo}}, {{logoRight}}, {{cardLabel}}, {{details}}, {{name}}, {{idno}}, {{nisnId}},
               {{class}}, {{room}}, {{session}}, {{seat}}, {{photo}}, {{qr}}</div>
           </div>
         </div>
@@ -1971,7 +1994,9 @@
       signatureImage: "",
       stampImage: "",
       logoImage: "",
+      logoRightImage: "",
       logoSizeMm: 9,
+      headerRightText: "Kartu Ujian",
       boardText: "PAPAN TULIS",
       teacherText: "MEJA GURU",
       wMm: 95,
@@ -2007,7 +2032,10 @@
         <div class="sub">{{school}} | {{year}}</div>
       </div>
     </div>
-    <div style="text-align:right; font-size:9px; opacity:.95; white-space:nowrap; flex:0 0 auto">Kartu Ujian</div>
+    <div style="text-align:right; font-size:9px; opacity:.95; white-space:nowrap; flex:0 0 auto; display:flex; align-items:center; gap:6px; justify-content:flex-end">
+      <span>{{cardLabel}}</span>
+      {{logoRight}}
+    </div>
   </div>
 
   <div class="body">
@@ -2092,7 +2120,11 @@
     const t_logoFile = document.getElementById("t_logoFile");
     const t_logoClear = document.getElementById("t_logoClear");
     const t_logoPreview = document.getElementById("t_logoPreview");
+    const t_logoRightFile = document.getElementById("t_logoRightFile");
+    const t_logoRightClear = document.getElementById("t_logoRightClear");
+    const t_logoRightPreview = document.getElementById("t_logoRightPreview");
     const t_logoSize = document.getElementById("t_logoSize");
+    const t_headerRightText = document.getElementById("t_headerRightText");
     const t_boardText = document.getElementById("t_boardText");
     const t_teacherText = document.getElementById("t_teacherText");
     const t_w = document.getElementById("t_w");
@@ -2405,6 +2437,15 @@
       t_logoPreview.textContent = "Belum ada logo";
     }
 
+    function setLogoRightPreview(src) {
+      if (!t_logoRightPreview) return;
+      if (src) {
+        t_logoRightPreview.innerHTML = `<img src="${escapeHtml(src)}" alt="Pratinjau logo kanan" />`;
+        return;
+      }
+      t_logoRightPreview.textContent = "Belum ada logo kanan";
+    }
+
     function getStampHtml() {
       if (template.showStamp !== false && template.stampImage) {
         const x = Number(template.stampOffsetX || 0);
@@ -2434,6 +2475,12 @@
       if (!template.logoImage) return "";
       const size = Math.max(4, Math.min(20, Number(template.logoSizeMm) || 9));
       return `<div class="cardLogo" style="--logoSize:${size}mm"><img src="${escapeHtml(template.logoImage)}" alt="Logo kartu" /></div>`;
+    }
+
+    function getRightLogoHtml() {
+      if (!template.logoRightImage) return "";
+      const size = Math.max(4, Math.min(20, Number(template.logoSizeMm) || 9));
+      return `<div class="cardLogo" style="--logoSize:${size}mm"><img src="${escapeHtml(template.logoRightImage)}" alt="Logo kanan kartu" /></div>`;
     }
 
     function injectLogoPlaceholder(html) {
@@ -2733,10 +2780,13 @@
       setStampPreview(template.stampImage || "");
       setSignaturePreview(template.signatureImage || "");
       setLogoPreview(template.logoImage || "");
+      setLogoRightPreview(template.logoRightImage || "");
       if (t_stampFile) t_stampFile.value = "";
       if (t_signatureFile) t_signatureFile.value = "";
       if (t_logoFile) t_logoFile.value = "";
+      if (t_logoRightFile) t_logoRightFile.value = "";
       if (t_logoSize) t_logoSize.value = template.logoSizeMm ?? DEFAULT_TEMPLATE.logoSizeMm;
+      if (t_headerRightText) t_headerRightText.value = template.headerRightText ?? DEFAULT_TEMPLATE.headerRightText;
       t_boardText.value = template.boardText || DEFAULT_TEMPLATE.boardText;
       t_teacherText.value = template.teacherText || DEFAULT_TEMPLATE.teacherText;
       t_w.value = template.wMm;
@@ -2785,6 +2835,7 @@
       template.boardText = sanitizeText(t_boardText.value) || DEFAULT_TEMPLATE.boardText;
       template.teacherText = sanitizeText(t_teacherText.value) || DEFAULT_TEMPLATE.teacherText;
       template.logoSizeMm = Math.max(4, Math.min(20, toNumberOrZero(t_logoSize?.value) || DEFAULT_TEMPLATE.logoSizeMm));
+      template.headerRightText = sanitizeText(t_headerRightText?.value);
 
       template.wMm = Math.max(50, Math.min(200, toNumberOrZero(t_w.value) || DEFAULT_TEMPLATE.wMm));
       template.hMm = Math.max(40, Math.min(120, toNumberOrZero(t_h.value) || DEFAULT_TEMPLATE.hMm));
@@ -2877,6 +2928,20 @@
       }
     }
 
+    async function updateRightLogoFromFile(file) {
+      if (!file) return;
+      try {
+        template.logoRightImage = await readImageFileAsScaledDataURL(file, 200, 120);
+        setLogoRightPreview(template.logoRightImage);
+        renderMiniPreview();
+        if (panelPreview && !panelPreview.classList.contains("hide")) renderFullPreview();
+        try { saveTemplate(); } catch (e) { console.warn("saveTemplate failed", e); }
+        showToast("Logo kanan ditambahkan.");
+      } catch (e) {
+        showToast("Gagal membaca logo kanan: " + (e?.message || e), "error");
+      }
+    }
+
     function clearLogoImage() {
       template.logoImage = "";
       if (t_logoFile) t_logoFile.value = "";
@@ -2885,6 +2950,16 @@
       if (panelPreview && !panelPreview.classList.contains("hide")) renderFullPreview();
       try { saveTemplate(); } catch (e) { console.warn("saveTemplate failed", e); }
       showToast("Logo dihapus.");
+    }
+
+    function clearRightLogoImage() {
+      template.logoRightImage = "";
+      if (t_logoRightFile) t_logoRightFile.value = "";
+      setLogoRightPreview("");
+      renderMiniPreview();
+      if (panelPreview && !panelPreview.classList.contains("hide")) renderFullPreview();
+      try { saveTemplate(); } catch (e) { console.warn("saveTemplate failed", e); }
+      showToast("Logo kanan dihapus.");
     }
 
     function resetTemplate() {
@@ -2910,7 +2985,7 @@
     });
 
     ["input", "change"].forEach(evt => {
-      [t_school, t_exam, t_year, t_font, t_principal, t_nip, t_sigLabel, t_nisnLabel, t_idnoLabel, t_classLabel, t_roomLabel, t_sessionLabel, t_seatLabel, t_boardText, t_teacherText, t_w, t_h, t_primary, t_bg, t_showPhoto, t_showQr, t_showStamp, t_showSignature, t_stampOffsetX, t_stampOffsetY, t_signatureOffsetX, t_signatureOffsetY, t_stampWidth, t_signatureWidth, t_sigGapMm, t_qrOffsetY, t_html].forEach(el => {
+      [t_school, t_exam, t_year, t_font, t_principal, t_nip, t_sigLabel, t_nisnLabel, t_idnoLabel, t_classLabel, t_roomLabel, t_sessionLabel, t_seatLabel, t_boardText, t_teacherText, t_headerRightText, t_w, t_h, t_primary, t_bg, t_showPhoto, t_showQr, t_showStamp, t_showSignature, t_stampOffsetX, t_stampOffsetY, t_signatureOffsetX, t_signatureOffsetY, t_stampWidth, t_signatureWidth, t_sigGapMm, t_qrOffsetY, t_html].forEach(el => {
         el.addEventListener(evt, () => {
           pullTemplateFromUI();
           renderMiniPreview();
@@ -2960,6 +3035,16 @@
     if (t_logoClear) {
       t_logoClear.addEventListener("click", clearLogoImage);
     }
+    if (t_logoRightFile) {
+      t_logoRightFile.addEventListener("change", async () => {
+        const file = t_logoRightFile.files && t_logoRightFile.files[0];
+        if (!file) return;
+        await updateRightLogoFromFile(file);
+      });
+    }
+    if (t_logoRightClear) {
+      t_logoRightClear.addEventListener("click", clearRightLogoImage);
+    }
     if (t_logoSize) {
       t_logoSize.addEventListener("input", () => {
         pullTemplateFromUI();
@@ -3000,7 +3085,7 @@
 
     function makeQrText(student) {
       // Bisa kamu ubah formatnya sesuai kebutuhan sekolah
-      return `${student.idno}|${student.name}|${student.class || ""}|${student.room || ""}|${student.session || ""}|${student.seat || ""}`;
+      return `${student.idno}\n${student.name}\n${student.class || ""}\n${student.room || ""}\n${student.session || ""}\n${student.seat || ""}`;
     }
 
     function buildCardHTML(student) {
@@ -3052,6 +3137,8 @@
         html = html.replaceAll("{{year}}", escapeHtml(data.year));
         html = html.replaceAll("{{sigLabel}}", escapeHtml(data.sigLabel));
         html = html.replaceAll("{{logo}}", getLogoHtml());
+        html = html.replaceAll("{{logoRight}}", getRightLogoHtml());
+        html = html.replaceAll("{{cardLabel}}", escapeHtml(template.headerRightText ?? DEFAULT_TEMPLATE.headerRightText));
         html = html.replaceAll("{{stamp}}", stampHtml);
         html = html.replaceAll("{{principal}}", escapeHtml(data.principal));
         html = html.replaceAll("{{nip}}", escapeHtml(data.nip));
@@ -3068,6 +3155,7 @@
         html = html.replaceAll("{{signature}}", signatureHtml);
         html = html.replaceAll("{{photo}}", getPhotoHtml(student));
         html = html.replaceAll("{{qr}}", qrHtml);
+        html = html.replace(">Kartu Ujian<", `>${escapeHtml(template.headerRightText ?? DEFAULT_TEMPLATE.headerRightText)}<`);
         return stripHiddenDetailRowsFromHtml(html);
       }
 
@@ -3082,7 +3170,10 @@
                 <div class="sub">${escapeHtml(template.school)} | ${escapeHtml(template.year)}</div>
               </div>
             </div>
-            <div style="text-align:right; font-size:9px; opacity:.95; white-space:nowrap">Kartu Ujian</div>
+            <div style="text-align:right; font-size:9px; opacity:.95; white-space:nowrap; display:flex; align-items:center; gap:6px; justify-content:flex-end">
+              <span>${escapeHtml(template.headerRightText ?? DEFAULT_TEMPLATE.headerRightText)}</span>
+              ${getRightLogoHtml()}
+            </div>
           </div>
           <div class="body">
             ${photoHtml}
