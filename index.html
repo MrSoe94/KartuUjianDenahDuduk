@@ -3369,7 +3369,7 @@
       for (let i = 0; i < total; i++) {
         const st = getAssignedStudent(room, cfg, i);
         const name = st ? st.name : "(kosong)";
-        const meta = st ? `${st.idno}${st.seat ? " â€¢ No " + st.seat : ""}` : "Klik untuk isi";
+        const meta = st ? `${st.idno}${st.seat ? " | No " + st.seat : ""}` : "Klik untuk isi";
         cells.push(`
           <div class="seatCell" data-index="${i}">
             <div class="seatNo">Kursi ${i + 1}</div>
