@@ -976,7 +976,7 @@
     .examCard .name {
       font-size: calc(10px * var(--cardScale, 1));
       font-weight: 800;
-      margin: 0 0 calc(.8mm * var(--cardScale, 1));
+      margin: 0 0 calc(.35mm * var(--cardScale, 1));
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -987,7 +987,7 @@
       grid-template-columns: calc(16mm * var(--cardScale, 1)) 1fr;
       gap: calc(1.2mm * var(--cardScale, 1));
       font-size: calc(8px * var(--cardScale, 1));
-      margin: calc(.45mm * var(--cardScale, 1)) 0;
+      margin: calc(.25mm * var(--cardScale, 1)) 0;
       min-width: 0;
     }
 
@@ -1022,14 +1022,16 @@
       min-width: 0;
       max-width: calc(100% - 18mm * var(--cardScale, 1));
       line-height: 1.1;
-      display: block;
+      display: flex;
+      flex-direction: column;
       position: relative;
-      min-height: calc(26mm * var(--cardScale, 1));
+      min-height: calc(16mm * var(--cardScale, 1));
+      overflow: hidden;
     }
 
     .examCard .stamp .sigLabel {
       display: block;
-      margin-top: calc(.28mm * var(--cardScale, 1));
+      margin-top: calc(1.1mm * var(--cardScale, 1));
       position: relative;
       z-index: 1;
       white-space: nowrap;
@@ -1040,7 +1042,10 @@
     .examCard .stamp .sigBlock {
       width: 100%;
       position: absolute;
-      inset: 0;
+      top: calc(2.4mm * var(--cardScale, 1));
+      right: 0;
+      bottom: 0;
+      left: 0;
       min-height: 0;
       border: 0;
       background: transparent;
@@ -1097,7 +1102,7 @@
     .examCard .stamp .sigSpace {
       display: block;
       flex: 1 1 auto;
-      min-height: calc(7mm * var(--cardScale, 1));
+      min-height: calc(3.5mm * var(--cardScale, 1));
     }
 
     .examCard .stamp .sigName,
@@ -1117,7 +1122,7 @@
       font-weight: 500;
       border-bottom: 0px dashed rgba(0, 0, 0, 0);
       margin: 0;
-      margin-top: 40px;
+      margin-top: 0;
       padding: 0;
       line-height: 1;
     }
@@ -1125,7 +1130,7 @@
     .examCard .stamp .sigNip {
       font-size: 6px;
       margin: 0;
-      margin-top: 0;
+      margin-top: calc(.4mm * var(--cardScale, 1));
       padding: 0;
       line-height: 1;
     }
@@ -1731,7 +1736,10 @@
             <label>Gap Tanda Tangan (mm)</label>
             <input id="t_sigGapMm" type="number" step="0.5" min="0" />
           </div>
-          <div></div>
+          <div>
+            <label>Geser QR (Y mm)</label>
+            <input id="t_qrOffsetY" type="number" step="0.5" />
+          </div>
         </div>
 
         <div class="hr"></div>
@@ -1975,6 +1983,7 @@
       stampWidthMm: 22,
       signatureWidthMm: 16,
       sigGapMm: 0.5,
+      qrOffsetY: 0,
       showIdno: true,
       showNisnId: true,
       showClass: true,
@@ -2007,10 +2016,11 @@
           <span>{{sigLabel}}</span>
           {{stamp}}
           {{signature}}
+          <span class="sigSpace"></span>
           <span class="sigName">{{principal}}</span>
           <span class="sigNip">NIP. {{nip}}</span>
         </div>
-        <div class="qr">{{qr}}</div>
+        {{qr}}
       </div>
     </div>
   </div>
@@ -2093,6 +2103,7 @@
     const t_stampWidth = document.getElementById("t_stampWidth");
     const t_signatureWidth = document.getElementById("t_signatureWidth");
     const t_sigGapMm = document.getElementById("t_sigGapMm");
+    const t_qrOffsetY = document.getElementById("t_qrOffsetY");
     const t_mode = document.getElementById("t_mode");
     const t_html = document.getElementById("t_html");
     const advancedBox = document.getElementById("advancedBox");
@@ -2735,6 +2746,7 @@
       if (t_stampWidth) t_stampWidth.value = template.stampWidthMm ?? DEFAULT_TEMPLATE.stampWidthMm;
       if (t_signatureWidth) t_signatureWidth.value = template.signatureWidthMm ?? DEFAULT_TEMPLATE.signatureWidthMm;
       if (t_sigGapMm) t_sigGapMm.value = template.sigGapMm ?? DEFAULT_TEMPLATE.sigGapMm;
+      if (t_qrOffsetY) t_qrOffsetY.value = template.qrOffsetY ?? 0;
       if (chkShowIdno) chkShowIdno.checked = template.showIdno !== false;
       if (chkShowNisnId) chkShowNisnId.checked = template.showNisnId !== false;
       if (chkShowClass) chkShowClass.checked = template.showClass !== false;
@@ -2783,6 +2795,7 @@
       template.stampWidthMm = Math.max(1, toNumberOrZero(t_stampWidth?.value) || DEFAULT_TEMPLATE.stampWidthMm);
       template.signatureWidthMm = Math.max(1, toNumberOrZero(t_signatureWidth?.value) || DEFAULT_TEMPLATE.signatureWidthMm);
       template.sigGapMm = Math.max(0, toNumberOrZero(t_sigGapMm?.value) || DEFAULT_TEMPLATE.sigGapMm);
+      template.qrOffsetY = toNumberOrZero(t_qrOffsetY?.value);
       template.showIdno = !!chkShowIdno?.checked;
       template.showNisnId = !!chkShowNisnId?.checked;
       template.showClass = !!chkShowClass?.checked;
@@ -2889,7 +2902,7 @@
     });
 
     ["input", "change"].forEach(evt => {
-      [t_school, t_exam, t_year, t_font, t_principal, t_nip, t_sigLabel, t_nisnLabel, t_idnoLabel, t_classLabel, t_roomLabel, t_sessionLabel, t_seatLabel, t_boardText, t_teacherText, t_w, t_h, t_primary, t_bg, t_showPhoto, t_showQr, t_showStamp, t_showSignature, t_stampOffsetX, t_stampOffsetY, t_signatureOffsetX, t_signatureOffsetY, t_stampWidth, t_signatureWidth, t_sigGapMm, t_html].forEach(el => {
+      [t_school, t_exam, t_year, t_font, t_principal, t_nip, t_sigLabel, t_nisnLabel, t_idnoLabel, t_classLabel, t_roomLabel, t_sessionLabel, t_seatLabel, t_boardText, t_teacherText, t_w, t_h, t_primary, t_bg, t_showPhoto, t_showQr, t_showStamp, t_showSignature, t_stampOffsetX, t_stampOffsetY, t_signatureOffsetX, t_signatureOffsetY, t_stampWidth, t_signatureWidth, t_sigGapMm, t_qrOffsetY, t_html].forEach(el => {
         el.addEventListener(evt, () => {
           pullTemplateFromUI();
           renderMiniPreview();
@@ -2973,7 +2986,8 @@
 
     function getQrPlaceholder(student) {
       if (!template.showQr) return `<div style="display:none"></div>`;
-      return `<div class="qr" data-qr="1" data-qrtext="${escapeHtml(makeQrText(student))}" aria-label="QR"></div>`;
+      const y = Number(template.qrOffsetY || 0);
+      return `<div class="qr" data-qr="1" data-qrtext="${escapeHtml(makeQrText(student))}" style="transform: translateY(${y}mm)" aria-label="QR"></div>`;
     }
 
     function makeQrText(student) {
@@ -3003,9 +3017,16 @@
 
       if (template.mode === "html") {
         let html = sanitizeTemplateHTML(template.html);
+        // Hindari QR terpotong saat template lama masih memakai <div class="qr">{{qr}}</div>.
+        html = html.replace(/<div\b[^>]*class=["'][^"']*\bqr\b[^"']*["'][^>]*>\s*\{\{qr\}\}\s*<\/div>/gi, "{{qr}}");
         html = injectLogoPlaceholder(html);
         const stampHtml = getStampHtml();
         const signatureHtml = getSignatureHtml();
+        // Pastikan ada ruang untuk stempel/TTD antara label dan nama (Mode HTML).
+        // Kalau template belum punya <span class="sigSpace"></span>, sisipkan sebelum .sigName.
+        if (!/class=["'][^"']*\bsigSpace\b/i.test(html)) {
+          html = html.replace(/(<span\b[^>]*class=["'][^"']*\bsigName\b[^"']*["'][^>]*>)/i, `<span class="sigSpace"></span>$1`);
+        }
         const hasStampPlaceholder = html.includes("{{stamp}}");
         const hasSignaturePlaceholder = html.includes("{{signature}}");
         if ((stampHtml || signatureHtml) && !hasStampPlaceholder && !hasSignaturePlaceholder) {
@@ -3038,7 +3059,7 @@
         html = html.replaceAll("{{details}}", buildDetailLines(data));
         html = html.replaceAll("{{signature}}", signatureHtml);
         html = html.replaceAll("{{photo}}", getPhotoHtml(student));
-        html = html.replaceAll("{{qr}}", template.showQr ? `<div class="qr" data-qr="1" data-qrtext="${escapeHtml(makeQrText(student))}"></div>` : `<div style="display:none"></div>`);
+        html = html.replaceAll("{{qr}}", qrHtml);
         return stripHiddenDetailRowsFromHtml(html);
       }
 
@@ -3066,10 +3087,11 @@
                 <div class="stamp">
                   <span class="sigLabel">${escapeHtml(data.sigLabel)}</span>
                   ${getSignatureBlockHtml() || ""}
+                  <span class="sigSpace"></span>
                   <span class="sigName">${escapeHtml(data.principal)}</span>
                   <span class="sigNip">NIP. ${escapeHtml(data.nip)}</span>
                 </div>
-                ${template.showQr ? `<div class="qr" data-qr="1" data-qrtext="${escapeHtml(makeQrText(student))}"></div>` : `<div style="display:none"></div>`}
+                ${qrHtml}
               </div>
             </div>
           </div>
