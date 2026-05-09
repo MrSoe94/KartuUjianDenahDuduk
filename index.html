@@ -1862,6 +1862,9 @@
             <span class="pill">Kolom</span>
             <input id="seat_cols" type="number" min="1" max="30" style="width:100px" />
 
+            <span class="pill">Jumlah Kursi</span>
+            <input id="seat_count" type="number" min="1" max="900" style="width:110px" />
+
             <span class="pill">Gap</span>
             <input id="seat_gap" type="number" min="0" max="50" step="1" style="width:100px" />
 
@@ -2133,6 +2136,7 @@
     const seat_session = document.getElementById("seat_session");
     const seat_rows = document.getElementById("seat_rows");
     const seat_cols = document.getElementById("seat_cols");
+    const seat_count = document.getElementById("seat_count");
     const seat_gap = document.getElementById("seat_gap");
     const seat_height = document.getElementById("seat_height");
     const seat_orientation = document.getElementById("seat_orientation");
@@ -3220,10 +3224,16 @@
 
     function getSeatingConfig(room) {
       const key = seatKey(room);
-      const cfg = seating[key] || { rows: 4, cols: 7, map: {} };
+      const cfg = seating[key] || { rows: 4, cols: 7, seatCount: 28, map: {} };
       cfg.rows = Math.max(1, Math.min(30, toNumberOrZero(cfg.rows) || 4));
       cfg.cols = Math.max(1, Math.min(30, toNumberOrZero(cfg.cols) || 7));
+      const maxSeats = cfg.rows * cfg.cols;
+      cfg.seatCount = Math.max(1, Math.min(maxSeats, toNumberOrZero(cfg.seatCount) || maxSeats));
       cfg.map = cfg.map && typeof cfg.map === "object" ? cfg.map : {};
+      Object.keys(cfg.map).forEach((k) => {
+        const idx = toNumberOrZero(k);
+        if (idx < 0 || idx >= maxSeats) delete cfg.map[k];
+      });
       seating[key] = cfg;
       return cfg;
     }
@@ -3253,6 +3263,7 @@
       if (syncInputs) {
         seat_rows.value = cfg.rows;
         seat_cols.value = cfg.cols;
+        if (seat_count) seat_count.value = cfg.seatCount;
         if (!seat_gap.value) seat_gap.value = "8";
         if (!seat_height.value) seat_height.value = "70";
         if (!seat_order.value) seat_order.value = "left";
@@ -3273,7 +3284,10 @@
       const cfg = getSeatingConfig(room);
       cfg.rows = Math.max(1, Math.min(30, toNumberOrZero(seat_rows.value) || cfg.rows));
       cfg.cols = Math.max(1, Math.min(30, toNumberOrZero(seat_cols.value) || cfg.cols));
+      const maxSeats = cfg.rows * cfg.cols;
+      cfg.seatCount = Math.max(1, Math.min(maxSeats, toNumberOrZero(seat_count?.value) || cfg.seatCount || maxSeats));
       setSeatingConfig(room, cfg);
+      if (seat_count) seat_count.value = cfg.seatCount;
       renderSeatStudentSelect(room, cfg, seat_session.value);
       renderSeatGrid(room, cfg, seat_session.value);
     }
@@ -3287,7 +3301,7 @@
       `;
 
       const assignedCount = Object.keys(cfg.map || {}).length;
-      seatInfo.textContent = `Ruangan: ${room} | Sesi: ${session === "__all__" ? "Semua" : session} | ${sorted.length} peserta | ${cfg.rows}x${cfg.cols} kursi | ${assignedCount} terisi`;
+      seatInfo.textContent = `Ruangan: ${room} | Sesi: ${session === "__all__" ? "Semua" : session} | ${sorted.length} peserta | ${cfg.rows}x${cfg.cols} (${cfg.seatCount} ditampilkan) | ${assignedCount} terisi`;
     }
 
     function getAssignedStudent(room, cfg, index) {
@@ -3325,13 +3339,54 @@
       if (orderMode === "right") {
         return [...list].reverse();
       }
+      return list;
+    }
+
+    function shuffleArray(list) {
+      const out = [...list];
+      for (let i = out.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [out[i], out[j]] = [out[j], out[i]];
+      }
+      return out;
+    }
+
+    function getSeatFillIndexes(rows, cols, orderMode = "left") {
+      const total = Math.max(1, rows * cols);
+      const indexes = Array.from({ length: total }, (_, i) => i);
+      if (orderMode === "right") {
+        const rightOrder = [];
+        for (let r = 0; r < rows; r++) {
+          for (let c = cols - 1; c >= 0; c--) {
+            rightOrder.push((r * cols) + c);
+          }
+        }
+        return rightOrder;
+      }
       if (orderMode === "random") {
-        return [...list]
+        return indexes
           .map(v => ({ v, k: Math.random() }))
           .sort((a, b) => a.k - b.k)
           .map(x => x.v);
       }
-      return list;
+      return indexes;
+    }
+
+    function getVisibleSeatIndexes(rows, cols, orderMode = "left", seatCount = rows * cols) {
+      const maxSeats = Math.max(1, rows * cols);
+      const visibleCount = Math.max(1, Math.min(maxSeats, toNumberOrZero(seatCount) || maxSeats));
+      // Untuk mode acak, kursi yang tampil tetap konsisten; yang diacak adalah urutan siswanya.
+      const visibilityMode = orderMode === "right" ? "right" : "left";
+      return getSeatFillIndexes(rows, cols, visibilityMode).slice(0, visibleCount);
+    }
+
+    function getSeatLabelNumber(index, rows, cols, orderMode = "left") {
+      if (orderMode === "right") {
+        const row = Math.floor(index / cols);
+        const col = index % cols;
+        return (row * cols) + (cols - col);
+      }
+      return index + 1;
     }
 
     function getRoomSessionText(room) {
@@ -3347,7 +3402,16 @@
 
     function setActiveSeat(index) {
       activeSeatIndex = index;
-      seat_selected.value = index >= 0 ? `Kursi ${index + 1}` : "";
+      if (index < 0) {
+        seat_selected.value = "";
+      } else {
+        const room = seat_room?.value;
+        const cfg = getSeatingConfig(room);
+        const cols = Math.max(1, toNumberOrZero(seat_cols?.value) || cfg.cols);
+        const rows = Math.max(1, toNumberOrZero(seat_rows?.value) || cfg.rows);
+        const orderMode = seat_order?.value || "left";
+        seat_selected.value = `Kursi ${getSeatLabelNumber(index, rows, cols, orderMode)}`;
+      }
       [...seatGrid.querySelectorAll(".seatCell")].forEach(el => {
         el.classList.toggle("active", Number(el.getAttribute("data-index")) === index);
       });
@@ -3356,23 +3420,29 @@
     function renderSeatGrid(room, cfg, session) {
       const cols = Math.max(1, toNumberOrZero(seat_cols.value) || cfg.cols);
       const rows = Math.max(1, toNumberOrZero(seat_rows.value) || cfg.rows);
+      const orderMode = seat_order.value || "left";
       cfg.cols = cols;
       cfg.rows = rows;
+      const maxSeats = rows * cols;
+      cfg.seatCount = Math.max(1, Math.min(maxSeats, toNumberOrZero(seat_count?.value) || cfg.seatCount || maxSeats));
       setSeatingConfig(room, cfg);
+      if (seat_count) seat_count.value = cfg.seatCount;
 
       seatGrid.style.gridTemplateColumns = `repeat(${cols}, 120px)`;
       seatGrid.style.gap = `${getSeatGapMm()}px`;
       seatGrid.style.setProperty("--seatCellH", `${getSeatHeightPx()}px`);
 
-      const total = rows * cols;
+      const visibleIndexes = getVisibleSeatIndexes(rows, cols, orderMode, cfg.seatCount);
       const cells = [];
-      for (let i = 0; i < total; i++) {
-        const st = getAssignedStudent(room, cfg, i);
+      for (let i = 0; i < visibleIndexes.length; i++) {
+        const seatIndex = visibleIndexes[i];
+        const st = getAssignedStudent(room, cfg, seatIndex);
         const name = st ? st.name : "(kosong)";
         const meta = st ? `${st.idno}${st.seat ? " | No " + st.seat : ""}` : "Klik untuk isi";
+        const seatNo = getSeatLabelNumber(seatIndex, rows, cols, orderMode);
         cells.push(`
-          <div class="seatCell" data-index="${i}">
-            <div class="seatNo">Kursi ${i + 1}</div>
+          <div class="seatCell" data-index="${seatIndex}">
+            <div class="seatNo">Kursi ${seatNo}</div>
             <div class="seatName">${escapeHtml(name)}</div>
             <div class="seatMeta">${escapeHtml(meta)}</div>
           </div>
@@ -3380,7 +3450,8 @@
       }
       seatGrid.innerHTML = cells.join("");
 
-      setActiveSeat(Math.min(activeSeatIndex, total - 1));
+      if (!visibleIndexes.includes(activeSeatIndex)) setActiveSeat(-1);
+      else setActiveSeat(activeSeatIndex);
     }
 
     seatGrid.addEventListener("click", (e) => {
@@ -3423,16 +3494,25 @@
       const cfg = getSeatingConfig(room);
       const cols = Math.max(1, toNumberOrZero(seat_cols.value) || cfg.cols);
       const rows = Math.max(1, toNumberOrZero(seat_rows.value) || cfg.rows);
+      const orderMode = seat_order.value || "left";
       cfg.cols = cols;
       cfg.rows = rows;
+      const maxSeats = rows * cols;
+      cfg.seatCount = Math.max(1, Math.min(maxSeats, toNumberOrZero(seat_count?.value) || cfg.seatCount || maxSeats));
 
-      const sorted = getFilteredRoomStudents(room, seat_session.value === "__all__" ? "" : seat_session.value, seat_order.value || "left");
-      const total = rows * cols;
+      let sorted = getFilteredRoomStudents(room, seat_session.value === "__all__" ? "" : seat_session.value, orderMode);
+      let fillIndexes = getVisibleSeatIndexes(rows, cols, orderMode, cfg.seatCount);
+      if (orderMode === "random") {
+        sorted = shuffleArray(sorted);
+        fillIndexes = shuffleArray(fillIndexes);
+      }
+      const total = fillIndexes.length;
       cfg.map = {};
       for (let i = 0; i < Math.min(total, sorted.length); i++) {
-        cfg.map[String(i)] = sorted[i].id;
+        cfg.map[String(fillIndexes[i])] = sorted[i].id;
       }
       setSeatingConfig(room, cfg);
+      if (seat_count) seat_count.value = cfg.seatCount;
       renderSeatingUI();
     }
 
@@ -3441,17 +3521,26 @@
       const cfg = getSeatingConfig(room);
       const cols = Math.max(1, toNumberOrZero(seat_cols.value) || cfg.cols);
       const rows = Math.max(1, toNumberOrZero(seat_rows.value) || cfg.rows);
+      const orderMode = seat_order.value || "left";
       cfg.cols = cols;
       cfg.rows = rows;
+      const maxSeats = rows * cols;
+      cfg.seatCount = Math.max(1, Math.min(maxSeats, toNumberOrZero(seat_count?.value) || cfg.seatCount || maxSeats));
 
-      const sorted = getFilteredRoomStudents(room, seat_session.value === "__all__" ? "" : seat_session.value, seat_order.value || "left");
-      const total = rows * cols;
+      let sorted = getFilteredRoomStudents(room, seat_session.value === "__all__" ? "" : seat_session.value, orderMode);
+      let fillIndexes = getVisibleSeatIndexes(rows, cols, orderMode, cfg.seatCount);
+      if (orderMode === "random") {
+        sorted = shuffleArray(sorted);
+        fillIndexes = shuffleArray(fillIndexes);
+      }
+      const total = fillIndexes.length;
       const map = {};
       for (let i = 0; i < Math.min(total, sorted.length); i++) {
-        map[String(i)] = sorted[i].id;
+        map[String(fillIndexes[i])] = sorted[i].id;
       }
       cfg.map = map;
       setSeatingConfig(room, cfg);
+      if (seat_count) seat_count.value = cfg.seatCount;
       renderSeatingUI();
       showToast("Denah diisi otomatis sesuai urutan data.");
     }
@@ -3471,17 +3560,22 @@
       const cfg = getSeatingConfig(room);
       const cols = Math.max(1, toNumberOrZero(seat_cols.value) || cfg.cols);
       const rows = Math.max(1, toNumberOrZero(seat_rows.value) || cfg.rows);
-      const total = rows * cols;
+      const maxSeats = rows * cols;
+      cfg.seatCount = Math.max(1, Math.min(maxSeats, toNumberOrZero(seat_count?.value) || cfg.seatCount || maxSeats));
+      const orderMode = seat_order.value || "left";
+      const visibleIndexes = getVisibleSeatIndexes(rows, cols, orderMode, cfg.seatCount);
       const gridStyle = `grid-template-columns: repeat(${cols}, 1fr); --seatGapPrint: ${getSeatGapMm()}mm; --seatCellHPrint: ${getSeatHeightMm()}mm;`;
 
       const cells = [];
-      for (let i = 0; i < total; i++) {
-        const st = getAssignedStudent(room, cfg, i);
+      for (let i = 0; i < visibleIndexes.length; i++) {
+        const seatIndex = visibleIndexes[i];
+        const st = getAssignedStudent(room, cfg, seatIndex);
         const name = st ? st.name : "";
         const meta = st ? `${st.idno}${st.class ? " | " + st.class : ""}${st.seat ? " | No " + st.seat : ""}` : "";
+        const seatNo = getSeatLabelNumber(seatIndex, rows, cols, orderMode);
         cells.push(`
           <div class="seatCellPrint">
-            <div class="seatNo">Kursi ${i + 1}</div>
+            <div class="seatNo">Kursi ${seatNo}</div>
             <div class="seatName">${escapeHtml(name || "-")}</div>
             <div class="seatMeta">${escapeHtml(meta || "")}</div>
           </div>
@@ -3932,6 +4026,7 @@
     seat_session.addEventListener("change", () => { activeSeatIndex = -1; renderSeatingUI(true); });
     seat_rows.addEventListener("change", seatResizeFromInputs);
     seat_cols.addEventListener("change", seatResizeFromInputs);
+    if (seat_count) seat_count.addEventListener("change", seatResizeFromInputs);
     seat_gap.addEventListener("change", () => renderSeatingUI(false));
     seat_height.addEventListener("change", () => renderSeatingUI(false));
     seat_orientation.addEventListener("change", () => setPageOrientation(getSeatOrientation()));
