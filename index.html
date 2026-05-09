@@ -3279,13 +3279,14 @@
       renderSeatGrid(current, cfg, currentSession);
     }
 
-    function seatResizeFromInputs() {
+    function seatResizeFromInputs(resetSeatCount = true) {
       const room = seat_room.value;
       const cfg = getSeatingConfig(room);
       cfg.rows = Math.max(1, Math.min(30, toNumberOrZero(seat_rows.value) || cfg.rows));
       cfg.cols = Math.max(1, Math.min(30, toNumberOrZero(seat_cols.value) || cfg.cols));
       const maxSeats = cfg.rows * cfg.cols;
-      cfg.seatCount = Math.max(1, Math.min(maxSeats, toNumberOrZero(seat_count?.value) || cfg.seatCount || maxSeats));
+      if (resetSeatCount) cfg.seatCount = maxSeats;
+      else cfg.seatCount = Math.max(1, Math.min(maxSeats, toNumberOrZero(seat_count?.value) || cfg.seatCount || maxSeats));
       setSeatingConfig(room, cfg);
       if (seat_count) seat_count.value = cfg.seatCount;
       renderSeatStudentSelect(room, cfg, seat_session.value);
@@ -4024,9 +4025,9 @@
     document.getElementById("btnSeatAutoNext").addEventListener("click", seatAutoNext);
     seat_room.addEventListener("change", () => { activeSeatIndex = -1; renderSeatingUI(true); });
     seat_session.addEventListener("change", () => { activeSeatIndex = -1; renderSeatingUI(true); });
-    seat_rows.addEventListener("change", seatResizeFromInputs);
-    seat_cols.addEventListener("change", seatResizeFromInputs);
-    if (seat_count) seat_count.addEventListener("change", seatResizeFromInputs);
+    seat_rows.addEventListener("change", () => seatResizeFromInputs(true));
+    seat_cols.addEventListener("change", () => seatResizeFromInputs(true));
+    if (seat_count) seat_count.addEventListener("change", () => seatResizeFromInputs(false));
     seat_gap.addEventListener("change", () => renderSeatingUI(false));
     seat_height.addEventListener("change", () => renderSeatingUI(false));
     seat_orientation.addEventListener("change", () => setPageOrientation(getSeatOrientation()));
